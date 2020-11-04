@@ -1,0 +1,136 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/brython@3.8.10/brython.min.js"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.8.10/brython_stdlib.js">
+    </script>
+   
+</head>
+<body onload="brython()">
+<script type="text/python">
+import time
+from browser import document as doc
+from browser import html
+from browser import timer,bind
+from browser.widgets.dialog import Dialog, EntryDialog, InfoDialog
+import datetime
+
+_timer = None
+counter = 0
+start_time = 0
+timer_end = None
+
+def show():
+    h = (time.time()-counter)//3600
+    min = (time.time()-counter)%3600//60
+    sec = (time.time()-counter)%60
+    doc['_timer'].text = '{:02.0f}:{:02.0f}:{:02.0f}'.format(h,min,sec)
+
+def start_timer(ev):
+    global _timer,counter,start_time
+    if _timer is None:
+        if start_time == 0 :
+            counter = time.time()
+            _timer = timer.set_interval(show,1000)
+            doc['start'].style.color = 'gray'
+
+def stop_timer(ev):
+    global _timer, start_time, timer_end
+    if start_time == 0 :
+        start_time = start_time + 1
+        timer.clear_interval(_timer)
+        timer_end = time.time()
+        _timer = None
+        print(doc['_timer'].text)
+        doc['stop'].style.color = 'gray'
+        
+def clear_timer(ev):
+    global _timer,counter,start_time
+    counter = 0
+    start_time = 0
+    _timer = None
+    doc['task_name'].value = ''
+    doc['_timer'].text = '00:00:00'
+    doc['start'].style.color = 'black'
+    doc['stop'].style.color = 'black'
+    
+
+#def save_dialog(ev):
+#    global _timer,d
+#    d = InfoDialog("Task summary", f"Well done! You performed task '{doc['task_name'].value}' for {doc['_timer'].text}!", ok="Save that")
+#    d.ok_button.bind('click',get_timestamps)
+
+#def get_timestamps():
+#    global counter,timer_end
+#    return counter,timer_end
+#    print('start timestamp',counter,'end timestamp',timer_end)
+    
+def get_timestamps():
+    global counter
+    date = datetime.datetime.fromtimestamp(counter)
+    return date.strftime('%Y/%m/%d-%H:%M:%S')
+
+def get_form_data():
+    task = doc["task_name"].value
+    duration = doc["_timer"].text
+    return task, duration
+
+class DoneThat:
+    def __init__(self):
+        self.tasks = {}
+
+    def add_task(self, ev):
+        key = get_timestamps()
+        task, duration = get_form_data()
+        self.tasks[key] = [task, duration]
+        self.add_task_row(key)
+
+    def add_task_row(self, key):
+        row = html.TR()
+        row.id = key
+        self._temp_key = key
+        row <= html.TD(self.tasks[key][0]) + \
+               html.TD(key) + \
+               html.TD(self.tasks[key][1])
+        doc['tablebody'] <= row
+
+
+
+donethat = DoneThat()
+add_task = getattr(donethat,'add_task')
+doc['start'].bind('click', start_timer)
+doc['stop'].bind('click', stop_timer)
+doc['save'].bind('click', add_task)
+doc['clear'].bind('click', clear_timer)
+
+</script>
+    
+    
+<h1>Task Timer</h1> 
+<p>Please enter the task name and click 'Start'</p>
+<p>Task Name</p>
+<input id='task_name'>
+<button id="start">Start</button>
+<button id="stop">Stop</button>
+<div id="_timer" style="background-color:white;color:hotpink;padding:15px;font-family:courier;font-weight:bold;font-size:23px;">00:00:00</div>
+<button id="save">Save</button>  
+<button id="clear">Clear</button> 
+<p></p>
+<table id="mytable" class="table table-striped table-bordered table-hover table-responsive">
+    <thead class="header">
+        <tr>
+            <th class="text-center">Task</th>
+            <th class="text-center">Created</th>
+            <th class="text-center">Duration</th>
+        </tr>
+    </thead>
+    <tbody id="tablebody">
+    </tbody>
+</table> 
+<p></p>
+<button id="plot">Open ploting page</button> 
+<p></p>
+</body>
+</html>
